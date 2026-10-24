@@ -1,0 +1,111 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Visor de veredas de Boyacá | Nivelación SIG</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; background: #f3f6fa; }
+header { background: #183650; color: white; padding: 16px 24px; }
+h1 { font-size: 23px; margin: 0 0 7px; }
+header p { margin: 0; font-size: 13px; opacity: .9; }
+#estado { padding: 11px 24px; background: #e7f0f7; font-size: 14px; }
+#mapa { height: calc(100vh - 119px); min-height: 400px; }
+footer { position: absolute; bottom: 22px; left: 12px; z-index: 500;
+ background: white; padding: 8px 12px; font-size: 11px; border-radius: 5px; }
+</style>
+</head>
+<body>
+<header>
+<h1>Veredas de Boyacá</h1>
+<p>Nivelación SIG · Visor Leaflet · Servicio geográfico IDE Boyacá</p>
+</header>
+
+<div id="estado">Consultando servicio geográfico...</div>
+<div id="mapa"></div>
+<footer>Fuente: IDE Boyacá · ArcGIS FeatureServer · EPSG:4326</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const mapa = L.map('mapa').setView([5.55, -73.35], 8);
+
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors',
+  maxZoom: 19
+}).addTo(mapa);
+
+const url = 'https://services6.arcgis.com/Ex2fmFOuTOHRZtML/ArcGIS/rest/services/Veredas_Boyaca_2024/FeatureServer/0/query';
+
+const escapar = valor => String(valor ?? 'Sin información')
+  .replaceAll('&','&amp;')
+  .replaceAll('<','&lt;')
+  .replaceAll('>','&gt;')
+  .replaceAll('"','&quot;');
+
+async function cargarVeredas() {
+  const grupo = L.featureGroup().addTo(mapa);
+  let offset = 0;
+  const bloque = 500;
+  let total = 0;
+
+  try {
+    while (true) {
+      const params = new URLSearchParams({
+        where: '1=1',
+        outFields: 'NOMB_MPIO,NOMBRE_VER',
+        outSR: '4326',
+        f: 'geojson',
+        resultOffset: String(offset),
+        resultRecordCount: String(bloque)
+      });
+
+      const respuesta = await fetch(url + '?' + params);
+      if (!respuesta.ok) throw new Error('HTTP ' + respuesta.status);
+
+      const datos = await respuesta.json();
+      if (datos.error) throw new Error(JSON.stringify(datos.error));
+
+      const entidades = datos.features || [];
+
+      L.geoJSON(datos, {
+        style: {
+          color: '#256c77',
+          weight: 1,
+          fillColor: '#43b5ad',
+          fillOpacity: 0.32
+        },
+        onEachFeature: (feature, layer) => {
+          const p = feature.properties || {};
+          layer.bindPopup(
+            '<strong>Vereda:</strong> ' + escapar(p.NOMBRE_VER) +
+            '<br><strong>Municipio:</strong> ' + escapar(p.NOMB_MPIO)
+          );
+        }
+      }).addTo(grupo);
+
+      total += entidades.length;
+      document.getElementById('estado').textContent =
+        'Veredas cargadas: ' + total;
+
+      if (entidades.length < bloque) break;
+      offset += bloque;
+    }
+
+    if (grupo.getLayers().length > 0) mapa.fitBounds(grupo.getBounds());
+
+    document.getElementById('estado').textContent =
+      'Consulta finalizada · ' + total +
+      ' veredas cargadas · Haz clic en un polígono para consultar sus atributos.';
+  } catch (error) {
+    document.getElementById('estado').textContent =
+      'Error al consultar el servicio: ' + error.message;
+    console.error(error);
+  }
+}
+
+cargarVeredas();
+</script>
+</body>
+</html>
