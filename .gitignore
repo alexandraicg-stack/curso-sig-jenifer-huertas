@@ -1,0 +1,9 @@
+﻿__pycache__/
+*.pyc
+.venv/
+.env
+.vscode/
+datos/municipios.geojson
+datos/veredas_boyaca.geojson
+datos/red_vial_departamental.geojson
+datos/provincias_boyaca.geojson
