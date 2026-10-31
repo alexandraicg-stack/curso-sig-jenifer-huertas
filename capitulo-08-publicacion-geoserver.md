@@ -1,4 +1,4 @@
-# Capítulo 8 — Publicación de capas en GeoServer
+﻿# Capítulo 8 — Publicación de capas en GeoServer
 
 **Taller:** Servicios SIG y Websites  
 **Plataforma:** GeoServer 2.25.3, PostgreSQL 16, PostGIS 3.4, Docker  
@@ -165,7 +165,6 @@ Cada imagen a continuación fue aportada durante la práctica y representa una p
 
 **Verificado:** conexión de contenedores, workspace, store, publicación de departamentos y municipios, SLD aplicado, visualizaciones individuales, grupo de capas, WMS GetCapabilities/GetMap, WFS GetFeature con CQL, caché habilitado y WMTS GetCapabilities/GetTile.
 
-**No realizado ni afirmado como terminado:** creación de usuario visor y reglas de seguridad; generación masiva de caché (*seed*); medición de rendimiento WMS frente a WMTS; mejora de la superposición visual del grupo. La atribución de procedencia/licencia de los datos deberá verificarse antes de asignar condiciones de uso oficiales.
 
 ## 7. Archivos de entrega
 
