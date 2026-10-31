@@ -1,0 +1,7 @@
+﻿OBSERVACIONES — CAPÍTULO 1: GIT
+
+1. Git permite controlar versiones y conservar el historial de cambios.
+2. Se verificó el funcionamiento de Git y GitHub.
+3. Se exploraron los archivos geográficos disponibles.
+4. Se utilizaron las operaciones add, commit, push y log.
+5. Los datos GeoJSON pueden integrarse al repositorio, considerando su tamaño.
