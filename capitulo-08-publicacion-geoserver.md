@@ -161,11 +161,7 @@ Cada imagen a continuación fue aportada durante la práctica y representa una p
 
 ![Tesela PNG GetTile con el departamento de Arauca](evidencias/capitulo-08/19_wmts_gettile.png)
 
-## 6. Estado y pendientes
-
-
-
-## 7. Archivos de entrega
+## 6. Archivos de entrega
 
 - `capitulo-08-publicacion-geoserver.md`: este informe.
 - `evidencias/capitulo-08/`: capturas reales de la práctica.
@@ -174,3 +170,4 @@ Cada imagen a continuación fue aportada durante la práctica y representa una p
 - `operaciones-ogc.md`: apartado “WMTS propio” agregado en el equipo; conservar la versión local sin reemplazarla.
 
 **Nota:** los enlaces a `localhost` únicamente funcionan en el equipo que tiene los servicios Docker activos; GitHub documenta el procedimiento y las evidencias, pero no hospeda esos servicios.
+
