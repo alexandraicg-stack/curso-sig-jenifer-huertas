@@ -163,7 +163,6 @@ Cada imagen a continuación fue aportada durante la práctica y representa una p
 
 ## 6. Estado y pendientes
 
-**Verificado:** conexión de contenedores, workspace, store, publicación de departamentos y municipios, SLD aplicado, visualizaciones individuales, grupo de capas, WMS GetCapabilities/GetMap, WFS GetFeature con CQL, caché habilitado y WMTS GetCapabilities/GetTile.
 
 
 ## 7. Archivos de entrega
