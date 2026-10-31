@@ -100,3 +100,35 @@ Se comprobó que WMS entrega imágenes de mapas, WFS ofrece entidades vectoriale
 ![Publicación del Capítulo 2 en GitHub](evidencias/capitulo-02/02_publicacion_github.png)
 
 **Referencia:** [Material del curso](https://github.com/epiragauta/servicios_sig_y_websites)
+
+## WMTS propio - GeoWebCache
+
+### Servicio publicado
+
+- Servidor: GeoServer 2.25.3
+- Capa: taller:departamentos
+- Estilo: departamentos_dorado
+- Gridset: EPSG:4326
+- Formato: image/png
+
+### GetCapabilities
+
+http://localhost:8081/geoserver/gwc/service/wmts?SERVICE=WMTS&REQUEST=GetCapabilities&VERSION=1.0.0
+
+### GetTile verificado
+
+- TileMatrix: EPSG:4326:5
+- TileRow: 14
+- TileCol: 19
+- Dimensiones: 256 x 256 pixeles
+
+http://localhost:8081/geoserver/gwc/service/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=taller:departamentos&STYLE=departamentos_dorado&TILEMATRIXSET=EPSG:4326&TILEMATRIX=EPSG:4326:5&TILEROW=14&TILECOL=19&FORMAT=image/png
+
+### Comparacion WMS y WMTS
+
+WMS GetMap genera mapas para extensiones y dimensiones solicitadas por el cliente.
+
+WMTS GetTile entrega teselas organizadas en una piramide de niveles, filas y columnas, que pueden almacenarse en cache.
+
+WMTS es preferible para la navegacion repetitiva de mapas con teselas estandarizadas; WMS ofrece mayor flexibilidad para mapas personalizados.
+
