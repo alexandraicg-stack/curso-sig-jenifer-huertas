@@ -1,200 +1,138 @@
-cd "$HOME\\curso-sig-jenifer-huertas"
+# Capítulo 3 — PostgreSQL y PostGIS
 
+**Taller práctico | Servicios SIG y aplicaciones web geográficas**
 
+**Área de trabajo:** Colombia
+**Entorno:** Docker — PostgreSQL 16 — PostGIS 3.4
+**Base de datos:** taller_gis
 
-@'
+---
 
-\# Capítulo 3 — PostgreSQL y PostGIS
+## 1. Objetivo
 
+Implementar y verificar una base de datos espacial en PostgreSQL/PostGIS, mediante la creación de geometrías, consultas de distancia, áreas de influencia e índices espaciales.
 
+## 2. Verificación del entorno
 
-\*\*Curso:\*\* Servicios SIG y aplicaciones web geográficas  
+Se utilizó el contenedor Docker `curso_postgis`, independiente del entorno utilizado para los servicios SIG del proyecto Amazonas.
 
-\*\*Base de datos:\*\* taller\_gis  
+| Componente | Resultado verificado |
+|---|---|
+| Contenedor | `curso_postgis` |
+| PostgreSQL | Versión 16 |
+| Base de datos | `taller_gis` |
+| PostGIS | `3.4 USE_GEOS=1 USE_PROJ=1 USE_STATS=1` |
+| Cliente de consulta | `psql` mediante Docker |
 
-\*\*Entorno:\*\* Docker, PostgreSQL 16 y PostGIS 3.4
+La conexión y la consulta `postgis_version()` se ejecutaron satisfactoriamente.
 
+## 3. Creación de la tabla de ciudades
 
+Se creó la tabla `ciudades` con los campos `id`, `nombre`, `poblacion` y `geom`. Las geometrías corresponden a puntos en el sistema de referencia EPSG:4326.
 
-\## 1. Verificación del entorno
+| Ciudad | Población usada en el ejercicio | Longitud | Latitud |
+|---|---:|---:|---:|
+| Bogotá | 7.181.469 | -74.0721 | 4.7110 |
+| Medellín | 2.508.452 | -75.5636 | 6.2442 |
+| Cali | 2.227.642 | -76.5225 | 3.4516 |
+| Barranquilla | 1.232.766 | -74.7813 | 10.9685 |
+| Cartagena | 1.028.736 | -75.5144 | 10.3910 |
 
+**Resultado:** cinco registros insertados y verificados.
 
+Las poblaciones son los valores de ejemplo de la guía; no representan necesariamente estimaciones demográficas vigentes.
 
-Se utilizó el contenedor `curso\_postgis`, correspondiente al entorno del curso, sin modificar los servicios del proyecto Amazonas.
+## 4. Distancias geodésicas
 
-
-
-La consulta de verificación confirmó:
-
-
-
-\- Base de datos: `taller\_gis`
-
-\- PostGIS: `3.4 USE\_GEOS=1 USE\_PROJ=1 USE\_STATS=1`
-
-\- Acceso: `psql` desde Docker
-
-
-
-\## 2. Creación de datos espaciales
-
-
-
-Se creó la tabla `ciudades` con cinco registros correspondientes a:
-
-
-
-\- Bogotá
-
-\- Medellín
-
-\- Cali
-
-\- Barranquilla
-
-\- Cartagena
-
-
-
-Los registros contienen identificador, nombre, población y geometría `POINT` con SRID 4326.
-
-
-
-Las geometrías se construyeron utilizando `ST\_MakePoint` y `ST\_SetSRID`.
-
-
-
-\## 3. Cálculo de distancias geodésicas
-
-
-
-Se utilizó `ST\_Distance` con conversión a `geography` para calcular distancias entre las cinco ciudades.
-
-
+Se utilizó la función `ST_Distance` con conversión a `geography` para calcular las distancias entre todos los pares únicos de ciudades.
 
 | Origen | Destino | Distancia (km) |
-
 |---|---|---:|
+| Barranquilla | Bogotá | 696,46 |
+| Barranquilla | Cali | 853,24 |
+| Barranquilla | Cartagena | 102,53 |
+| Barranquilla | Medellín | 529,55 |
+| Bogotá | Cali | 305,65 |
+| Bogotá | Cartagena | 648,01 |
+| Bogotá | Medellín | 236,77 |
+| Cali | Cartagena | 775,47 |
+| Cali | Medellín | 326,61 |
+| Medellín | Cartagena | 458,66 |
 
-| Barranquilla | Bogotá | 696.46 |
+**Resultado:** diez pares de ciudades, sin duplicaciones.
 
-| Barranquilla | Cali | 853.24 |
+Las distancias corresponden a cálculos geodésicos en kilómetros y no a recorridos por carretera.
 
-| Barranquilla | Cartagena | 102.53 |
+### Consulta SQL utilizada
 
-| Barranquilla | Medellín | 529.55 |
+    SELECT
+        a.nombre AS origen,
+        b.nombre AS destino,
+        ROUND((ST_Distance(a.geom::geography,
+              b.geom::geography) / 1000)::numeric, 2)
+              AS distancia_km
+    FROM ciudades a
+    JOIN ciudades b ON a.id < b.id
+    ORDER BY origen, destino;
 
-| Bogotá | Cali | 305.65 |
+## 5. Buffer de 200 km alrededor de Bogotá
 
-| Bogotá | Cartagena | 648.01 |
-
-| Bogotá | Medellín | 236.77 |
-
-| Cali | Cartagena | 775.47 |
-
-| Cali | Medellín | 326.61 |
-
-| Medellín | Cartagena | 458.66 |
-
-
-
-\*\*Resultado:\*\* 10 pares únicos de ciudades.
-
-
-
-Las distancias corresponden a cálculos geodésicos, no a recorridos por carretera.
-
-
-
-\## 4. Buffer de 200 km alrededor de Bogotá
-
-
-
-Se generó una geometría mediante:
-
-
-
-`ST\_Buffer(geom::geography, 200000)::geometry`
-
-
-
-\*\*Resultados verificados:\*\*
-
-
+Se utilizó `ST_Buffer` sobre la geometría convertida a `geography`, con una distancia solicitada de 200.000 metros. El resultado se almacenó en la tabla `buffer_bogota_200km`.
 
 | Parámetro | Resultado |
-
 |---|---|
-
 | Ciudad | Bogotá |
-
 | Radio solicitado | 200 km |
+| Tipo de geometría | `ST_Polygon` |
+| Sistema de referencia | EPSG:4326 |
+| Área calculada | **124.894,68 km²** |
+| Registros generados | 1 |
 
-| Geometría | ST\_Polygon |
+### Consulta de verificación
 
-| SRID | 4326 |
+    SELECT
+        nombre,
+        ST_GeometryType(geom) AS tipo_geometria,
+        ST_SRID(geom) AS srid,
+        ROUND((ST_Area(geom::geography)
+              / 1000000)::numeric, 2) AS area_km2
+    FROM buffer_bogota_200km;
 
-| Área calculada | 124894.68 km² |
+**Interpretación:** la superficie obtenida representa la aproximación poligonal del área de influencia de 200 km alrededor de Bogotá.
 
-| Registros | 1 |
+## 6. Creación y verificación del índice espacial
 
+Se creó un índice espacial GiST sobre la columna `geom` de la tabla `ciudades`.
 
+    CREATE INDEX IF NOT EXISTS idx_ciudades_geom
+    ON ciudades USING GIST (geom);
 
-La geometría se almacenó en la tabla `buffer\_bogota\_200km`.
+La revisión de `pg_indexes` confirmó los siguientes índices:
 
+| Índice | Tipo | Función |
+|---|---|---|
+| `ciudades_pkey` | B-tree | Identificador principal |
+| `idx_ciudades_geom` | GiST | Indexación espacial de geometrías |
 
+## 7. Validación final
 
-La superficie calculada corresponde a la representación poligonal aproximada del buffer.
+| Comprobación | Cantidad | Estado |
+|---|---:|---|
+| Ciudades registradas | 5 | Correcto |
+| Pares de ciudades analizados | 10 | Correcto |
+| Buffer de Bogotá | 1 | Correcto |
+| Índice espacial GiST | 1 | Correcto |
 
+Durante el procedimiento se identificó y corrigió un inconveniente de codificación de caracteres en los nombres Bogotá y Medellín. Posteriormente se verificó que el buffer tuviera un registro válido.
 
+## 8. Conclusiones
 
-\## 5. Índice espacial
+El desarrollo permitió comprobar el funcionamiento de PostgreSQL y PostGIS en Docker, así como la ejecución de operaciones espaciales básicas mediante SQL.
 
+Se crearon cinco geometrías puntuales, se calcularon diez distancias geodésicas, se generó un buffer de 200 km y se verificó un índice espacial GiST.
 
-
-Se creó el índice espacial GiST sobre la columna geométrica:
-
-
-
-```sql
-
-CREATE INDEX IF NOT EXISTS idx\_ciudades\_geom
-
-ON ciudades USING GIST (geom);
-
-
-```
-
-La consulta al catalogo pg_indexes confirmo dos indices:
-- ciudades_pkey: indice B-tree sobre el identificador.
-- idx_ciudades_geom: indice espacial GiST sobre la geometria.
-
-## 6. Verificacion final de resultados
-
-La consulta final a PostgreSQL confirmo:
-
-| Elemento | Cantidad |
-|---|---:|
-| Ciudades registradas | 5 |
-| Buffers generados | 1 |
-| Indices espaciales GiST | 1 |
-| Pares de ciudades analizados | 10 |
-
-El buffer de Bogota tiene un radio solicitado de 200 km y una superficie aproximada de 124894.68 km2.
-
-## 7. Conclusiones
-
-Se verifico el funcionamiento de PostgreSQL 16 y PostGIS 3.4 mediante Docker, utilizando la base taller_gis.
-
-Se crearon cinco geometrías puntuales con SRID 4326, se calcularon diez distancias geodesicas, se genero un buffer de 200 km alrededor de Bogota y se creo un indice espacial GiST.
-
-Se corrigio un problema de codificacion de caracteres en los nombres de Bogota y Medellin, que inicialmente impedia obtener el buffer mediante la busqueda por nombre.
-
-Los resultados fueron comprobados mediante consultas SQL ejecutadas desde PowerShell.
+Los resultados se contrastaron con las salidas obtenidas en PowerShell y `psql`, conservando la base `taller_gis` para continuar los próximos capítulos.
 
 ## Referencia
 
-Repositorio del profesor:
-https://github.com/epiragauta/servicios_sig_y_websites
-
-
+[Repositorio del profesor — Servicios SIG y Websites](https://github.com/epiragauta/servicios_sig_y_websites)
