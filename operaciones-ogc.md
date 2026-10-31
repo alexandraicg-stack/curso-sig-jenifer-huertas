@@ -1,87 +1,102 @@
-﻿# Capítulo 2 — Exploración y consumo de servicios OGC
+# Capítulo 2 — Exploración y consumo de servicios OGC
 
-**Área de estudio:** Boyacá, Colombia  
-**Fuente principal:** DANE, Marco Geoestadístico Nacional 2024  
-**Objetivo:** consultar servicios WMS y WFS y explorar la estructura de teselas XYZ.
+**Curso:** Servicios SIG y aplicaciones web geográficas  
+**Guía:** `taller/capitulo-02-consumir-servicios-ogc.md`  
+**Área de estudio:** zona de Boyacá, Colombia  
+**Fuente principal:** DANE, Marco Geoestadístico Nacional 2024
 
-## 1. WMS — GetCapabilities
+## 1. Objetivo
 
-Se consultó el servicio WMS del DANE y se descargó un documento XML válido, cuyo elemento principal es `WMS_Capabilities`.
+Consumir servicios geográficos públicos para identificar operaciones WMS y WFS, extraer imágenes y entidades vectoriales, y comprender el esquema de teselas XYZ.
 
-**Capas identificadas:**
+## 2. WMS — GetCapabilities
 
-| Name | Title | CRS soportados |
+Se consultó el servicio WMS del DANE. La respuesta se descargó correctamente como XML, con nodo raíz `WMS_Capabilities` y un tamaño observado de **20.284 bytes**.
+
+| Nombre de capa | Título | CRS disponibles |
 |---|---|---|
-| 7 | Municipio | CRS:84, EPSG:4326, EPSG:3857, EPSG:102100 |
-| 8 | Departamento | CRS:84, EPSG:4326, EPSG:3857, EPSG:102100 |
+| `7` | Municipio | `CRS:84`, `EPSG:4326`, `EPSG:3857`, `EPSG:102100` |
+| `8` | Departamento | `CRS:84`, `EPSG:4326`, `EPSG:3857`, `EPSG:102100` |
 
-**Formatos GetMap:** image/bmp, image/jpeg, image/tiff, image/png, image/png8, image/png24, image/png32, image/gif e image/svg+xml.
+**Formatos GetMap observados:** `image/bmp`, `image/jpeg`, `image/tiff`, `image/png`, `image/png8`, `image/png24`, `image/png32`, `image/gif`, `image/svg+xml`.
 
-[Consultar GetCapabilities](https://geoportal.dane.gov.co/mparcgis/services/MGN2024/Serv_CapasMGN_2024/MapServer/WMSServer?service=WMS&request=GetCapabilities)
+**URL:** [GetCapabilities — DANE](https://geoportal.dane.gov.co/mparcgis/services/MGN2024/Serv_CapasMGN_2024/MapServer/WMSServer?service=WMS&request=GetCapabilities)
 
-## 2. WMS — GetMap
+### Evidencia — respuesta XML válida
 
-Se generó una imagen del área de Boyacá utilizando la capa departamental del DANE.
+![Descarga y validación de WMS Capabilities](evidencias/capitulo-02/02_getcapabilities_xml.png)
 
-**Parámetros:**
+### Evidencia — dos capas, CRS y formatos
 
-- Servicio: WMS
-- Versión: 1.3.0
-- Operación: GetMap
-- Capa: 8 (Departamento)
-- CRS: EPSG:4326
-- BBOX: 4.5,-74.7,7.2,-71.8
-- Dimensiones: 1200 × 900 píxeles
-- Formato: image/png
+![Capas Municipio y Departamento y formatos de salida](evidencias/capitulo-02/02_capas_crs_formatos.png)
 
-[Consultar GetMap](https://geoportal.dane.gov.co/mparcgis/services/MGN2024/Serv_CapasMGN_2024/MapServer/WMSServer?service=WMS&version=1.3.0&request=GetMap&layers=8&styles=&crs=EPSG:4326&bbox=4.5,-74.7,7.2,-71.8&width=1200&height=900&format=image/png)
+## 3. WMS — GetMap
 
-![Imagen WMS del área de Boyacá](evidencias/capitulo-02/boyaca_departamento.png)
-
-## 3. WFS — GetFeature con filtro espacial
-
-Se consultó la capa Municipio del WFS del DANE, utilizando un filtro BBOX y solicitando la respuesta en formato GeoJSON.
-
-**Parámetros:**
-
-- Servicio: WFS
-- Versión: 2.0.0
-- Operación: GetFeature
-- Tipo de entidad: Serv_CapasMGN_2024:Municipio
-- BBOX: 4.5,-74.7,7.2,-71.8,EPSG:4326
-- Formato: GEOJSON
-- CRS: EPSG:4326
-- Límite solicitado: 2000
-
-**Resultado verificado: 347 elementos GeoJSON.**
-
-El rectángulo consultado incluye sectores de departamentos vecinos, por lo que este valor no corresponde exclusivamente a los municipios de Boyacá.
-
-La primera consulta, con el orden de ejes inverso, devolvió cero elementos. La corrección del BBOX permitió obtener los 347 registros.
-
-## 4. Teselas XYZ
-
-Se descargó una tesela cartográfica de OpenStreetMap para explorar el funcionamiento de los niveles de zoom y las coordenadas de teselas.
+Se generó una imagen PNG a partir del WMS del DANE utilizando la capa `8` (Departamento), con los siguientes parámetros:
 
 | Parámetro | Valor |
 |---|---|
-| Esquema | XYZ |
-| Zoom (z) | 7 |
-| Columna (x) | 38 |
-| Fila (y) | 60 |
-| Formato | PNG |
-| Dimensiones | 256 × 256 píxeles |
+| Versión | `1.3.0` |
+| Capa | `8` — Departamento |
+| CRS | `EPSG:4326` |
+| BBOX | `4.5,-74.7,7.2,-71.8` |
+| Dimensiones | 1200 × 900 píxeles |
+| Formato | `image/png` |
 
-**URL:** https://tile.openstreetmap.org/7/38/60.png
+En WMS 1.3.0, para `EPSG:4326` se usó el orden de ejes latitud/longitud. La imagen resultante permitió identificar el departamento de Boyacá y áreas limítrofes.
 
-![Tesela XYZ](evidencias/capitulo-02/tesela_z7_x38_y60.png)
+**URL:** [GetMap del área de Boyacá](https://geoportal.dane.gov.co/mparcgis/services/MGN2024/Serv_CapasMGN_2024/MapServer/WMSServer?service=WMS&version=1.3.0&request=GetMap&layers=8&styles=&crs=EPSG:4326&bbox=4.5,-74.7,7.2,-71.8&width=1200&height=900&format=image/png)
 
-Las teselas XYZ utilizan la estructura `z/x/y`, mientras que el estándar WMTS identifica las teselas mediante parámetros como TileMatrix, TileRow y TileCol.
+### Evidencia — imagen WMS mostrada en el visor de Windows
 
-## Conclusiones
+![Mapa GetMap de Boyacá obtenido del DANE](evidencias/capitulo-02/02_getmap_boyaca.png)
 
-El ejercicio permitió comprobar las diferencias entre los servicios WMS, WFS y las teselas XYZ. WMS entrega imágenes cartográficas; WFS permite obtener geometrías y atributos para análisis espacial; y las teselas XYZ proporcionan imágenes organizadas por niveles de zoom.
+## 4. WFS — GetFeature con filtro espacial
 
-Se comprobó también la importancia de interpretar correctamente el orden de los ejes de coordenadas, especialmente al utilizar EPSG:4326 en distintas versiones de servicios OGC.
+Se consultó la capa `Serv_CapasMGN_2024:Municipio` del servicio WFS 2.0.0 del DANE, solicitando GeoJSON y un filtro espacial BBOX.
 
-**Repositorio:** https://github.com/alexandraicg-stack/curso-sig-jenifer-huertas
+| Parámetro | Valor |
+|---|---|
+| Operación | `GetFeature` |
+| Tipo de entidad | `Serv_CapasMGN_2024:Municipio` |
+| BBOX | `4.5,-74.7,7.2,-71.8,EPSG:4326` |
+| Formato | `GEOJSON` |
+| SRID solicitado | `EPSG:4326` |
+| Límite solicitado | 2000 |
+| **Elementos devueltos** | **347** |
+
+La primera solicitud usó el BBOX en el orden de ejes inverso y produjo un GeoJSON válido con cero elementos. Una vez corregido el orden, devolvió **347** entidades. El recuadro abarca partes de departamentos vecinos: **347 no es el total de municipios de Boyacá**.
+
+### Evidencia — respuesta GeoJSON y conteo
+
+![WFS GetFeature: GeoJSON válido con 347 municipios](evidencias/capitulo-02/02_wfs_347.png)
+
+## 5. Teselas XYZ
+
+Se descargó una tesela PNG de OpenStreetMap mediante el esquema `z/x/y`.
+
+| Parámetro | Valor |
+|---|---|
+| Zoom (`z`) | `7` |
+| Columna (`x`) | `38` |
+| Fila (`y`) | `60` |
+| Resolución | 256 × 256 píxeles |
+| URL | https://tile.openstreetmap.org/7/38/60.png |
+
+La imagen representa un sector de la zona de Maracaibo, Venezuela. Se utiliza como **ejemplo de tesela XYZ**, no como mapa de Boyacá ni como verificación de un servicio WMTS clásico. Esta alternativa está aceptada explícitamente en el ejercicio del profesor.
+
+### Evidencia — tesela cargada
+
+![Tesela XYZ de OpenStreetMap](evidencias/capitulo-02/02_tesela_xyz.png)
+
+## 6. Publicación y conclusiones
+
+Se comprobó que WMS entrega imágenes de mapas, WFS ofrece entidades vectoriales con geometrías y atributos y XYZ organiza imágenes cartográficas por niveles de zoom, fila y columna. El ejercicio mostró también la importancia del orden de ejes en `EPSG:4326`.
+
+**Publicación original del capítulo:** commit `34c439b`, rama `main`.
+
+### Evidencia — publicación del documento en GitHub
+
+![Publicación del Capítulo 2 en GitHub](evidencias/capitulo-02/02_publicacion_github.png)
+
+**Referencia:** [Material del curso](https://github.com/epiragauta/servicios_sig_y_websites)

@@ -1,36 +1,49 @@
-# Capítulo 3 — PostgreSQL y PostGIS
+# Capítulo 3 — Instalación de PostgreSQL y PostGIS
 
-**Taller práctico | Servicios SIG y aplicaciones web geográficas**
+**Curso:** Servicios SIG y aplicaciones web geográficas  
+**Guía utilizada:** `taller/capitulo-03-postgresql-postgis.md` del repositorio del profesor  
+**Entorno:** Windows PowerShell, Docker, PostgreSQL 16 / PostGIS 3.4  
+**Contenedor:** `curso_postgis`  
+**Base de datos:** `taller_gis`  
+**Puerto de acceso desde Windows:** `5433` (contenedor: `5432`)  
+**Área de trabajo:** cinco ciudades de Colombia.
 
-**Área de trabajo:** Colombia
-**Entorno:** Docker — PostgreSQL 16 — PostGIS 3.4
-**Base de datos:** taller_gis
+## 1. Objetivo y alcance
 
----
+Verificar PostgreSQL/PostGIS mediante Docker y ejecutar el ejercicio práctico del capítulo: crear una tabla espacial de ciudades, insertar los datos del ejemplo, calcular distancias entre ciudades, generar un buffer de 200 km y crear un índice GiST. Se utiliza el contenedor del curso y se conserva la separación respecto del proyecto previo del Amazonas.
 
-## 1. Objetivo
+## 2. Verificación de servicios y base de datos
 
-Implementar y verificar una base de datos espacial en PostgreSQL/PostGIS, mediante la creación de geometrías, consultas de distancia, áreas de influencia e índices espaciales.
+Se revisó el estado de los contenedores con `docker ps -a`. Inicialmente, `curso_postgis` estaba detenido, mientras que el contenedor `postgis` del proyecto anterior estaba activo. Se inició **solo** `curso_postgis` mediante `docker start curso_postgis`.
 
-## 2. Verificación del entorno
+La consulta a `pg_database` mostró tres bases en ese contenedor: `postgres`, `taller_gis` y `geodatos`. Por tanto, no se necesitó crear nuevamente `taller_gis` ni eliminar los volúmenes existentes.
 
-Se utilizó el contenedor Docker `curso_postgis`, independiente del entorno utilizado para los servicios SIG del proyecto Amazonas.
+Se verificó la extensión con:
 
-| Componente | Resultado verificado |
-|---|---|
-| Contenedor | `curso_postgis` |
-| PostgreSQL | Versión 16 |
-| Base de datos | `taller_gis` |
-| PostGIS | `3.4 USE_GEOS=1 USE_PROJ=1 USE_STATS=1` |
-| Cliente de consulta | `psql` mediante Docker |
+```powershell
+docker exec curso_postgis psql -U postgres -d taller_gis -c "SELECT current_database() AS base_datos, postgis_version() AS version_postgis;"
+```
 
-La conexión y la consulta `postgis_version()` se ejecutaron satisfactoriamente.
+**Respuesta comprobada:** `taller_gis | 3.4 USE_GEOS=1 USE_PROJ=1 USE_STATS=1`.
 
-## 3. Creación de la tabla de ciudades
+> Nota de infraestructura: la guía del profesor describe el puerto `5432` para su configuración predeterminada. En este equipo el contenedor `curso_postgis` está publicado en el **puerto 5433 del anfitrión**, para evitar conflictos con otro servicio PostgreSQL que utiliza el `5432`. Desde `docker exec` no se necesita especificar ese puerto.
 
-Se creó la tabla `ciudades` con los campos `id`, `nombre`, `poblacion` y `geom`. Las geometrías corresponden a puntos en el sistema de referencia EPSG:4326.
+## 3. Creación de la tabla y carga de ciudades
 
-| Ciudad | Población usada en el ejercicio | Longitud | Latitud |
+Se ejecutó una definición espacial equivalente a la propuesta en la guía:
+
+```sql
+CREATE TABLE IF NOT EXISTS ciudades (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100),
+    poblacion INTEGER,
+    geom GEOMETRY(POINT, 4326)
+);
+```
+
+Los puntos se crearon con `ST_MakePoint(longitud, latitud)` y se etiquetaron en `EPSG:4326` mediante `ST_SetSRID`.
+
+| Ciudad | Población del ejemplo | Longitud | Latitud |
 |---|---:|---:|---:|
 | Bogotá | 7.181.469 | -74.0721 | 4.7110 |
 | Medellín | 2.508.452 | -75.5636 | 6.2442 |
@@ -38,13 +51,30 @@ Se creó la tabla `ciudades` con los campos `id`, `nombre`, `poblacion` y `geom`
 | Barranquilla | 1.232.766 | -74.7813 | 10.9685 |
 | Cartagena | 1.028.736 | -75.5144 | 10.3910 |
 
-**Resultado:** cinco registros insertados y verificados.
+**Resultado de la operación:** `CREATE TABLE` e `INSERT 0 5`.
 
-Las poblaciones son los valores de ejemplo de la guía; no representan necesariamente estimaciones demográficas vigentes.
+![Salida inicial de la tabla de ciudades](evidencias/capitulo-03/00_ciudades_insertadas.png)
 
-## 4. Distancias geodésicas
+Las poblaciones son **valores didácticos suministrados en la guía**, no estimaciones demográficas actuales.
 
-Se utilizó la función `ST_Distance` con conversión a `geography` para calcular las distancias entre todos los pares únicos de ciudades.
+Durante la carga, la consola mostró inicialmente `Bogot?` y `Medell?n`. Se corrigieron los nombres con literales Unicode SQL (`U&'Bogot\00E1'`, `U&'Medell\00EDn'`) y se verificó posteriormente la visualización de las tildes en los resultados de consultas.
+
+## 4. Distancias geodésicas entre ciudades
+
+La instrucción SQL usada para obtener pares únicos, evitando duplicar A–B y B–A, fue:
+
+```sql
+SELECT
+    a.nombre AS origen,
+    b.nombre AS destino,
+    ROUND(
+        (ST_Distance(a.geom::geography, b.geom::geography) / 1000)::numeric,
+        2
+    ) AS distancia_km
+FROM ciudades a
+JOIN ciudades b ON a.id < b.id
+ORDER BY origen, destino;
+```
 
 | Origen | Destino | Distancia (km) |
 |---|---|---:|
@@ -59,80 +89,81 @@ Se utilizó la función `ST_Distance` con conversión a `geography` para calcula
 | Cali | Medellín | 326,61 |
 | Medellín | Cartagena | 458,66 |
 
-**Resultado:** diez pares de ciudades, sin duplicaciones.
+**Resultado verificado:** diez pares únicos (`10 rows`). Las cifras representan distancias geodésicas aproximadas en kilómetros, **no** recorridos por carretera.
 
-Las distancias corresponden a cálculos geodésicos en kilómetros y no a recorridos por carretera.
-
-### Consulta SQL utilizada
-
-    SELECT
-        a.nombre AS origen,
-        b.nombre AS destino,
-        ROUND((ST_Distance(a.geom::geography,
-              b.geom::geography) / 1000)::numeric, 2)
-              AS distancia_km
-    FROM ciudades a
-    JOIN ciudades b ON a.id < b.id
-    ORDER BY origen, destino;
+![Evidencia de diez distancias calculadas](evidencias/capitulo-03/03_distancias_ciudades.png)
 
 ## 5. Buffer de 200 km alrededor de Bogotá
 
-Se utilizó `ST_Buffer` sobre la geometría convertida a `geography`, con una distancia solicitada de 200.000 metros. El resultado se almacenó en la tabla `buffer_bogota_200km`.
+Se creó la tabla `buffer_bogota_200km` a partir de la geometría del punto de Bogotá utilizando:
 
-| Parámetro | Resultado |
+```sql
+SELECT ST_Buffer(geom::geography, 200000)::geometry AS geom
+FROM ciudades
+WHERE nombre = U&'Bogot\00E1';
+```
+
+En la primera ejecución, la tabla quedó vacía debido al problema de codificación del nombre. Después de corregir el nombre se reconstruyó su contenido y se verificó el siguiente resultado:
+
+| Propiedad | Valor comprobado |
 |---|---|
-| Ciudad | Bogotá |
-| Radio solicitado | 200 km |
+| Nombre | Bogotá |
+| Radio solicitado | 200.000 metros (200 km) |
 | Tipo de geometría | `ST_Polygon` |
-| Sistema de referencia | EPSG:4326 |
-| Área calculada | **124.894,68 km²** |
-| Registros generados | 1 |
+| SRID | 4326 |
+| Área calculada mediante `ST_Area(geom::geography)` | **124.894,68 km²** |
+| Registros de la tabla | **1** |
 
-### Consulta de verificación
+**Consulta de verificación:**
 
-    SELECT
-        nombre,
-        ST_GeometryType(geom) AS tipo_geometria,
-        ST_SRID(geom) AS srid,
-        ROUND((ST_Area(geom::geography)
-              / 1000000)::numeric, 2) AS area_km2
-    FROM buffer_bogota_200km;
+```sql
+SELECT
+    nombre,
+    ST_GeometryType(geom) AS tipo_geometria,
+    ST_SRID(geom) AS srid,
+    ROUND((ST_Area(geom::geography) / 1000000)::numeric, 2) AS area_km2
+FROM buffer_bogota_200km;
+```
 
-**Interpretación:** la superficie obtenida representa la aproximación poligonal del área de influencia de 200 km alrededor de Bogotá.
+El área reportada es el área de la **aproximación poligonal** obtenida; el radio de entrada fue 200 km. No se afirma que el resultado tenga exactamente el área matemática de un círculo ideal.
 
-## 6. Creación y verificación del índice espacial
+![Evidencia del buffer de 200 km y su área](evidencias/capitulo-03/02_buffer_bogota.png)
 
-Se creó un índice espacial GiST sobre la columna `geom` de la tabla `ciudades`.
+## 6. Creación y verificación del índice espacial GiST
 
-    CREATE INDEX IF NOT EXISTS idx_ciudades_geom
-    ON ciudades USING GIST (geom);
+```sql
+CREATE INDEX IF NOT EXISTS idx_ciudades_geom
+ON ciudades USING GIST (geom);
+```
 
-La revisión de `pg_indexes` confirmó los siguientes índices:
+La consulta al catálogo `pg_indexes` confirmó dos índices en la tabla `ciudades`:
 
-| Índice | Tipo | Función |
-|---|---|---|
-| `ciudades_pkey` | B-tree | Identificador principal |
-| `idx_ciudades_geom` | GiST | Indexación espacial de geometrías |
+- `ciudades_pkey`: índice único B-tree sobre `id`.
+- `idx_ciudades_geom`: **índice espacial GiST** sobre `geom`.
 
-## 7. Validación final
+![Evidencia de los índices de la tabla ciudades](evidencias/capitulo-03/01_indice_gist.png)
 
-| Comprobación | Cantidad | Estado |
-|---|---:|---|
-| Ciudades registradas | 5 | Correcto |
-| Pares de ciudades analizados | 10 | Correcto |
-| Buffer de Bogotá | 1 | Correcto |
-| Índice espacial GiST | 1 | Correcto |
+## 7. Comprobación final y conclusiones
 
-Durante el procedimiento se identificó y corrigió un inconveniente de codificación de caracteres en los nombres Bogotá y Medellín. Posteriormente se verificó que el buffer tuviera un registro válido.
+Se ejecutó una consulta de consolidación con subconsultas de conteo. La respuesta observada fue:
 
-## 8. Conclusiones
+| Indicador | Total |
+|---|---:|
+| Registros de `ciudades` | **5** |
+| Registros de `buffer_bogota_200km` | **1** |
+| Índice espacial `idx_ciudades_geom` | **1** |
 
-El desarrollo permitió comprobar el funcionamiento de PostgreSQL y PostGIS en Docker, así como la ejecución de operaciones espaciales básicas mediante SQL.
+![Evidencia de la comprobación final](evidencias/capitulo-03/04_verificacion_final.png)
 
-Se crearon cinco geometrías puntuales, se calcularon diez distancias geodésicas, se generó un buffer de 200 km y se verificó un índice espacial GiST.
+Se cumplió el ejercicio práctico del Capítulo 3: verificación del servicio PostGIS en Docker, uso de `taller_gis`, carga de cinco geometrías puntuales, análisis de diez distancias, buffer espacial de 200 km e índice GiST. Los resultados fueron verificados mediante salidas reales de PostgreSQL compartidas durante el desarrollo del taller.
 
-Los resultados se contrastaron con las salidas obtenidas en PowerShell y `psql`, conservando la base `taller_gis` para continuar los próximos capítulos.
+**Alcance de evidencia:** las capturas incluidas documentan las operaciones descritas. No se adjuntan respaldos exportados de las tablas ni una base de datos completa. El apartado de pgAdmin de la guía es explicativo y no se presenta como una conexión a pgAdmin efectivamente comprobada en esta entrega.
 
-## Referencia
+## 8. Fuentes
 
-[Repositorio del profesor — Servicios SIG y Websites](https://github.com/epiragauta/servicios_sig_y_websites)
+- [Guía del profesor — Repositorio Servicios SIG y Websites](https://github.com/epiragauta/servicios_sig_y_websites/tree/main/taller)
+- [PostgreSQL 16 — Documentación](https://www.postgresql.org/docs/16/)
+- [PostGIS — Documentación](https://postgis.net/documentation/)
+
+---
+**Producto:** `capitulo-03-postgis.md` con evidencias relativas en `evidencias/capitulo-03/`, preparado para su incorporación al repositorio personal del curso.
