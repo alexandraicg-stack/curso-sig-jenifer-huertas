@@ -96,20 +96,6 @@ El uso de estos datos está sujeto a sus condiciones de acceso y atribución.
 
 ---
 
-## Evidencias y soportes
-
-Los resultados anteriores están respaldados por el documento de entrega de la Ruta C y por las capturas de las pruebas realizadas.
-
-Las evidencias comprenden:
-
-1. Activación y consulta de PostGIS.
-2. Acceso a GeoServer.
-3. Consulta del catálogo de pg_tileserv.
-4. Visualización del visor Leaflet con las veredas de Boyacá.
-5. Comparación de estándares y servicios geográficos.
-
-Las imágenes se incorporarán como enlaces individuales cuando se compruebe su ubicación en el repositorio.
-
 ---
 
 ## Conclusiones
@@ -124,3 +110,47 @@ El visor Leaflet constituye una aplicación práctica de visualización de infor
 
 **Jenifer Alexandra Huertas López**  
 **Noviembre de 2026**
+
+---
+
+<!-- INICIO EVIDENCIAS RUTA C -->
+
+## Evidencias gráficas de la Ruta C
+
+Las siguientes capturas documentan los resultados obtenidos durante el desarrollo de las actividades C2 y C3 de la nivelación SIG.
+
+### C2.1. PostgreSQL y PostGIS — Municipios de Boyacá
+
+Se verificó la disponibilidad de PostGIS y la incorporación de 123 municipios de Boyacá en la tabla `public.municipios_boyaca`.
+
+![Consulta PostGIS con 123 municipios de Boyacá](evidencias/01_postgis_123_municipios.png)
+
+*Figura 1. Verificación de PostGIS y de la información municipal de Boyacá.*
+
+### C2.2. GeoServer — Servicios geográficos
+
+Se comprobó el acceso a GeoServer, disponible localmente en el puerto 8081, con interfaces para la publicación y consulta de servicios geográficos.
+
+![GeoServer y servicios geográficos](evidencias/02_geoserver_servicios.png)
+
+*Figura 2. Acceso al servidor GeoServer y sus servicios.*
+
+### C2.3. pg_tileserv — Catálogo de teselas vectoriales
+
+Se verificó el reconocimiento de `public.municipios_boyaca` en el catálogo de pg_tileserv y la disponibilidad de su referencia para solicitar teselas vectoriales.
+
+![Catálogo de pg_tileserv](evidencias/03_pg_tileserv_catalogo.png)
+
+*Figura 3. Consulta del catálogo de capas vectoriales mediante pg_tileserv.*
+
+### C3. Visor cartográfico Leaflet — Veredas de Boyacá
+
+Se desarrolló y probó un visor web con Leaflet y OpenStreetMap. Durante la prueba documentada se visualizaron 1.713 geometrías correspondientes a veredas de Boyacá.
+
+![Visor Leaflet con 1713 veredas de Boyacá](evidencias/04_leaflet_1713_veredas.png)
+
+*Figura 4. Visor web Leaflet con la información de veredas de Boyacá.*
+
+**Visor documentado:** https://alexandraicg-stack.github.io/curso-sig-jenifer-huertas/
+
+<!-- FIN EVIDENCIAS RUTA C -->
