@@ -1,0 +1,97 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+}
+
+header {
+    background: #233b53;
+    color: white;
+    padding: 12px 24px;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+header p {
+    margin: 6px 0 0;
+    font-size: 13px;
+}
+
+#mapa {
+    height: calc(100vh - 85px);
+    width: 100%;
+}/* LEYENDA CARTOGRAFICA */
+.leyenda {
+    background: white;
+    padding: 12px 15px;
+    border-radius: 7px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    font: 13px Arial, sans-serif;
+    line-height: 1.8;
+}
+
+.leyenda strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.simbolo {
+    display: inline-block;
+    width: 18px;
+    height: 12px;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.departamento {
+    background: #FFD700;
+    border: 2px solid #232323;
+}
+
+.municipio {
+    background: transparent;
+    border: 1px solid #666666;
+}
+
+/* PRESENTACION DE LA LEYENDA */
+.leaflet-control.leyenda {
+    background: #ffffff !important;
+    padding: 12px 16px !important;
+    border: 1px solid #d5dce3;
+    border-radius: 8px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    color: #253547;
+    line-height: 1.8;
+    margin-bottom: 30px;
+    margin-right: 12px;
+}
+
+.leyenda strong {
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+
+.leyenda .simbolo {
+    display: inline-block;
+    width: 19px;
+    height: 12px;
+    margin-right: 8px;
+    vertical-align: middle;
+    box-sizing: border-box;
+}
+
+.leyenda .departamento {
+    background-color: #FFD700;
+    border: 2px solid #232323;
+}
+
+.leyenda .municipio {
+    background-color: #ffffff;
+    border: 1px solid #666666;
+}
